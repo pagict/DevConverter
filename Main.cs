@@ -50,7 +50,7 @@ public sealed class Main : IPlugin, IPluginI18n
     {
         var parts = SplitFirstToken(input);
         var cmd = parts.Command.ToLowerInvariant();
-        var arg = parts.Rest.Trim();
+        var arg = parts.Remainder.Trim();
 
         switch (cmd)
         {
@@ -126,133 +126,124 @@ public sealed class Main : IPlugin, IPluginI18n
         }
     }
 
+    private static List<Result> HelpResults()
+    {
+        return new List<Result>
+        {
+            MakeResult("DevConvert commands", "ts/date/tsms/dateutc, h2n/n2h/swap16/swap32/swap64, d2b/b2d/d2h/h2d, ip/ip2int/ip2hex/int2ip/hex2ip", string.Empty),
+            MakeResult("Examples", "dev ts 1719302400 | dev date 2026-06-25 17:30:00 | dev h2n 0x12345678 | dev ip 192.168.1.1", string.Empty)
+        };
+    }
+
     private static IEnumerable<Result> UnixToDate(string arg, bool? milliseconds)
     {
-        if (!long.TryParse(arg, NumberStyles.Integer, CultureInfo.InvariantCulture, out var raw))
-            return ErrorResult("Invalid timestamp", "Example: dev ts 1719302400 or dev tsms 1719302400000");
+        if (!long.TryParse(arg, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+            return ErrorResult("Invalid timestamp", arg);
 
-        var isMs = milliseconds ?? Math.Abs(raw) >= 100_000_000_000L;
-        var dto = isMs ? DateTimeOffset.FromUnixTimeMilliseconds(raw) : DateTimeOffset.FromUnixTimeSeconds(raw);
+        DateTimeOffset dto;
+        var isMs = milliseconds ?? Math.Abs(value) > 99_999_999_999;
+        dto = isMs ? DateTimeOffset.FromUnixTimeMilliseconds(value) : DateTimeOffset.FromUnixTimeSeconds(value);
+
         var local = dto.ToLocalTime();
-        var utc = dto.ToUniversalTime();
-        var value = local.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
-
         return new[]
         {
-            MakeResult(value, $"UTC: {utc:yyyy-MM-dd HH:mm:ss}Z | Unix seconds: {utc.ToUnixTimeSeconds()} | Unix ms: {utc.ToUnixTimeMilliseconds()}", value),
-            MakeResult(utc.ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture), $"Local: {value}", utc.ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture))
+            MakeResult(local.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture), "Local time", local.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture)),
+            MakeResult(dto.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture), "UTC", dto.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture)),
+            MakeResult(dto.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), "Unix seconds", dto.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
+            MakeResult(dto.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture), "Unix milliseconds", dto.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture))
         };
     }
 
     private static IEnumerable<Result> DateToUnix(string arg, bool assumeUtc)
     {
         if (string.IsNullOrWhiteSpace(arg))
-            return ErrorResult("Missing date string", "Example: dev date 2026-06-25 17:30:00");
+            return ErrorResult("Invalid date", "Try: dev date 2026-06-25 17:30:00");
 
-        var styles = assumeUtc ? DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal : DateTimeStyles.AssumeLocal;
-        if (!DateTimeOffset.TryParse(arg, CultureInfo.CurrentCulture, styles, out var dto) &&
-            !DateTimeOffset.TryParse(arg, CultureInfo.InvariantCulture, styles, out dto))
+        DateTimeOffset dto;
+        if (DateTimeOffset.TryParse(arg, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsedOffset))
         {
-            return ErrorResult("Invalid date string", "Example: dev date 2026-06-25 17:30:00 or dev dateutc 2026-06-25T09:30:00Z");
+            dto = assumeUtc ? parsedOffset.ToUniversalTime() : parsedOffset;
+        }
+        else if (DateTime.TryParse(arg, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+        {
+            dto = assumeUtc
+                ? new DateTimeOffset(DateTime.SpecifyKind(parsed, DateTimeKind.Utc))
+                : new DateTimeOffset(parsed);
+        }
+        else
+        {
+            return ErrorResult("Invalid date", arg);
         }
 
-        var unix = dto.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
-        var ms = dto.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
         return new[]
         {
-            MakeResult(unix, $"Unix seconds | Local: {dto.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz} | UTC: {dto.ToUniversalTime():yyyy-MM-dd HH:mm:ss}Z", unix),
-            MakeResult(ms, "Unix milliseconds", ms)
+            MakeResult(dto.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), "Unix seconds", dto.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
+            MakeResult(dto.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture), "Unix milliseconds", dto.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)),
+            MakeResult(dto.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture), "Local time", dto.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture)),
+            MakeResult(dto.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture), "UTC", dto.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture))
         };
     }
 
     private static IEnumerable<Result> SwapEndianAuto(string arg, string cmd)
     {
-        var value = ParseUnsigned(arg, 64);
-        var bits = value <= 0xFFFFUL ? 16 : value <= 0xFFFFFFFFUL ? 32 : 64;
-        return SwapEndianFixed(arg, bits, cmd);
+        if (!TryParseUnsigned(arg, out var value))
+            return ErrorResult("Invalid integer", arg);
+
+        var bits = MinimalBits(value);
+        return SwapEndianFixedValue(value, bits, cmd);
     }
 
-    private static IEnumerable<Result> SwapEndianFixed(string arg, int bits, string? label = null)
+    private static IEnumerable<Result> SwapEndianFixed(string arg, int bits)
     {
-        var value = ParseUnsigned(arg, bits);
-        ulong swapped = bits switch
+        if (!TryParseUnsigned(arg, out var value))
+            return ErrorResult("Invalid integer", arg);
+        return SwapEndianFixedValue(value, bits, "swap" + bits);
+    }
+
+    private static IEnumerable<Result> SwapEndianFixedValue(ulong value, int bits, string cmd)
+    {
+        var swapped = bits switch
         {
-            16 => SwapBytes(value, 2),
-            32 => SwapBytes(value, 4),
-            64 => SwapBytes(value, 8),
-            _ => throw new ArgumentOutOfRangeException(nameof(bits))
+            16 => (ulong)IPAddress.HostToNetworkOrder((short)value) & 0xFFFFUL,
+            32 => (ulong)IPAddress.HostToNetworkOrder((int)value) & 0xFFFFFFFFUL,
+            64 => (ulong)IPAddress.HostToNetworkOrder((long)value),
+            _ => value
         };
 
-        var title = FormatHex(swapped, bits);
-        var subtitle = $"{label ?? "swap"} uint{bits}: {FormatHex(value, bits)} -> {title} | dec: {swapped}";
-        return new[] { MakeResult(title, subtitle, title) };
+        return new[]
+        {
+            MakeResult(FormatHex(swapped, bits), $"{cmd} uint{bits}: {FormatHex(value, bits)} -> {FormatHex(swapped, bits)}", FormatHex(swapped, bits)),
+            MakeResult(swapped.ToString(CultureInfo.InvariantCulture), $"decimal uint{bits}", swapped.ToString(CultureInfo.InvariantCulture))
+        };
     }
 
     private static IEnumerable<Result> BaseConvert(string arg, int fromBase, int toBase)
     {
-        var value = ParseUnsigned(arg, 64, fromBase);
-        var title = FormatBase(value, toBase);
-        var subtitle = $"dec: {value} | hex: {FormatHex(value, MinimalBits(value))} | bin: 0b{Convert.ToString((long)value, 2)}";
-        return new[] { MakeResult(title, subtitle, title) };
-    }
+        if (!TryParseBase(arg, fromBase, out var value))
+            return ErrorResult("Invalid number", arg);
 
-    private static IEnumerable<Result> Ipv4Auto(string arg)
-    {
-        if (IPAddress.TryParse(arg, out var ip) && ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        var text = toBase switch
         {
-            return Ipv4Results(ip);
-        }
-
-        return NumberToIpv4Results(arg);
-    }
-
-    private static IEnumerable<Result> Ipv4ToInt(string arg)
-    {
-        var ip = ParseIpv4(arg);
-        var n = Ipv4ToUInt32(ip);
-        return new[] { MakeResult(n.ToString(CultureInfo.InvariantCulture), $"{ip} -> int", n.ToString(CultureInfo.InvariantCulture)) };
-    }
-
-    private static IEnumerable<Result> Ipv4ToHex(string arg)
-    {
-        var ip = ParseIpv4(arg);
-        var n = Ipv4ToUInt32(ip);
-        var hex = "0x" + n.ToString("X8", CultureInfo.InvariantCulture);
-        return new[] { MakeResult(hex, $"{ip} -> hex", hex) };
-    }
-
-    private static IEnumerable<Result> IntToIpv4(string arg) => NumberToIpv4Results(arg, forceBase: 10);
-
-    private static IEnumerable<Result> HexToIpv4(string arg) => NumberToIpv4Results(arg, forceBase: 16);
-
-    private static IEnumerable<Result> NumberToIpv4Results(string arg, int? forceBase = null)
-    {
-        var n = ParseUnsigned(arg, 32, forceBase);
-        var ip = UInt32ToIpv4((uint)n);
-        return new[] { MakeResult(ip.ToString(), $"int: {n} | hex: 0x{n:X8}", ip.ToString()) };
-    }
-
-    private static IEnumerable<Result> Ipv4Results(IPAddress ip)
-    {
-        var n = Ipv4ToUInt32(ip);
-        return new[]
-        {
-            MakeResult(n.ToString(CultureInfo.InvariantCulture), $"{ip} -> int", n.ToString(CultureInfo.InvariantCulture)),
-            MakeResult("0x" + n.ToString("X8", CultureInfo.InvariantCulture), $"{ip} -> hex", "0x" + n.ToString("X8", CultureInfo.InvariantCulture))
+            2 => "0b" + System.Convert.ToString((long)value, 2),
+            10 => value.ToString(CultureInfo.InvariantCulture),
+            16 => FormatHex(value, MinimalBits(value)),
+            _ => value.ToString(CultureInfo.InvariantCulture)
         };
+
+        return new[] { MakeResult(text, $"base {fromBase} -> base {toBase}", text) };
     }
 
     private static IEnumerable<Result> AutoConvert(string input)
     {
         var results = new List<Result>();
 
-        if (IPAddress.TryParse(input, out var ip) && ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        if (TryParseIpv4(input, out var ip))
             results.AddRange(Ipv4Results(ip));
 
         if (TryParseUnsigned(input, out var n))
         {
             results.Add(MakeResult(FormatHex(n, MinimalBits(n)), $"dec: {n}", FormatHex(n, MinimalBits(n))));
-            results.Add(MakeResult("0b" + Convert.ToString((long)n, 2), $"dec: {n}", "0b" + Convert.ToString((long)n, 2)));
+            results.Add(MakeResult("0b" + System.Convert.ToString((long)n, 2), $"dec: {n}", "0b" + System.Convert.ToString((long)n, 2)));
             if (n <= uint.MaxValue)
                 results.AddRange(NumberToIpv4Results(n.ToString(CultureInfo.InvariantCulture)));
         }
@@ -263,7 +254,7 @@ public sealed class Main : IPlugin, IPluginI18n
         return results;
     }
 
-    private static (string Command, string Rest) SplitFirstToken(string s)
+    private static (string Command, string Remainder) SplitFirstToken(string s)
     {
         var i = s.IndexOf(' ');
         return i < 0 ? (s, string.Empty) : (s[..i], s[(i + 1)..]);
@@ -273,98 +264,128 @@ public sealed class Main : IPlugin, IPluginI18n
     {
         if (IPAddress.TryParse(s.Trim(), out var ip) && ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
             return ip;
-        throw new ArgumentException("Invalid IPv4 address. Example: 192.168.1.1");
+        throw new FormatException("Invalid IPv4 address");
     }
 
-    private static uint Ipv4ToUInt32(IPAddress ip)
+    private static bool TryParseIpv4(string s, out IPAddress ip)
+    {
+        return IPAddress.TryParse(s.Trim(), out ip!) && ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
+    }
+
+    private static IEnumerable<Result> Ipv4Auto(string arg)
+    {
+        if (TryParseIpv4(arg, out var ip))
+            return Ipv4Results(ip);
+        if (TryParseUnsigned(arg, out var n))
+            return NumberToIpv4Results(n.ToString(CultureInfo.InvariantCulture));
+        return ErrorResult("Invalid IPv4/int/hex", arg);
+    }
+
+    private static IEnumerable<Result> Ipv4ToInt(string arg)
+    {
+        var ip = ParseIpv4(arg);
+        var n = Ipv4ToUInt(ip);
+        return new[] { MakeResult(n.ToString(CultureInfo.InvariantCulture), "IPv4 decimal-dot -> uint32", n.ToString(CultureInfo.InvariantCulture)) };
+    }
+
+    private static IEnumerable<Result> Ipv4ToHex(string arg)
+    {
+        var ip = ParseIpv4(arg);
+        var n = Ipv4ToUInt(ip);
+        return new[] { MakeResult(FormatHex(n, 32), "IPv4 decimal-dot -> hex uint32", FormatHex(n, 32)) };
+    }
+
+    private static IEnumerable<Result> IntToIpv4(string arg) => NumberToIpv4Results(arg);
+
+    private static IEnumerable<Result> HexToIpv4(string arg) => NumberToIpv4Results(arg);
+
+    private static IEnumerable<Result> NumberToIpv4Results(string arg)
+    {
+        if (!TryParseUnsigned(arg, out var n) || n > uint.MaxValue)
+            return ErrorResult("Invalid uint32", arg);
+        var ip = UIntToIpv4((uint)n);
+        return new[] { MakeResult(ip.ToString(), "uint32/hex -> IPv4 decimal-dot", ip.ToString()) };
+    }
+
+    private static IEnumerable<Result> Ipv4Results(IPAddress ip)
+    {
+        var n = Ipv4ToUInt(ip);
+        return new[]
+        {
+            MakeResult(n.ToString(CultureInfo.InvariantCulture), $"{ip} as uint32", n.ToString(CultureInfo.InvariantCulture)),
+            MakeResult(FormatHex(n, 32), $"{ip} as hex uint32", FormatHex(n, 32))
+        };
+    }
+
+    private static uint Ipv4ToUInt(IPAddress ip)
     {
         var bytes = ip.GetAddressBytes();
         return ((uint)bytes[0] << 24) | ((uint)bytes[1] << 16) | ((uint)bytes[2] << 8) | bytes[3];
     }
 
-    private static IPAddress UInt32ToIpv4(uint n)
+    private static IPAddress UIntToIpv4(uint value)
     {
-        return new IPAddress(new[]
+        var bytes = new[]
         {
-            (byte)((n >> 24) & 0xff),
-            (byte)((n >> 16) & 0xff),
-            (byte)((n >> 8) & 0xff),
-            (byte)(n & 0xff)
-        });
+            (byte)((value >> 24) & 0xFF),
+            (byte)((value >> 16) & 0xFF),
+            (byte)((value >> 8) & 0xFF),
+            (byte)(value & 0xFF)
+        };
+        return new IPAddress(bytes);
     }
 
-    private static ulong SwapBytes(ulong value, int bytes)
+    private static int MinimalBits(ulong value)
     {
-        ulong result = 0;
-        for (var i = 0; i < bytes; i++)
-        {
-            result = (result << 8) | (value & 0xFFUL);
-            value >>= 8;
-        }
-        return result;
+        if (value <= ushort.MaxValue) return 16;
+        if (value <= uint.MaxValue) return 32;
+        return 64;
     }
-
-    private static ulong ParseUnsigned(string s, int bits, int? forceBase = null)
-    {
-        if (!TryParseUnsigned(s, out var value, forceBase))
-            throw new ArgumentException("Invalid number. Supported: decimal, 0xHEX, 0bBIN.");
-
-        if (bits < 64 && value > ((1UL << bits) - 1))
-            throw new ArgumentOutOfRangeException(nameof(s), $"Value exceeds uint{bits} range.");
-        return value;
-    }
-
-    private static bool TryParseUnsigned(string s, out ulong value, int? forceBase = null)
-    {
-        s = s.Trim().Replace("_", "");
-        var numberBase = forceBase ?? 10;
-        if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-        {
-            numberBase = 16;
-            s = s[2..];
-        }
-        else if (s.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
-        {
-            numberBase = 2;
-            s = s[2..];
-        }
-        else if (forceBase == 16 && s.StartsWith("#"))
-        {
-            s = s[1..];
-        }
-
-        try
-        {
-            value = numberBase switch
-            {
-                2 => Convert.ToUInt64(s, 2),
-                10 => ulong.Parse(s, NumberStyles.Integer, CultureInfo.InvariantCulture),
-                16 => ulong.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture),
-                _ => throw new ArgumentOutOfRangeException()
-            };
-            return true;
-        }
-        catch
-        {
-            value = 0;
-            return false;
-        }
-    }
-
-    private static int MinimalBits(ulong value) => value <= 0xFFFF ? 16 : value <= 0xFFFFFFFF ? 32 : 64;
-
-    private static string FormatBase(ulong value, int toBase) => toBase switch
-    {
-        2 => "0b" + Convert.ToString((long)value, 2),
-        10 => value.ToString(CultureInfo.InvariantCulture),
-        16 => FormatHex(value, MinimalBits(value)),
-        _ => throw new ArgumentOutOfRangeException(nameof(toBase))
-    };
 
     private static string FormatHex(ulong value, int bits)
     {
-        var width = bits switch { 16 => 4, 32 => 8, 64 => 16, _ => 0 };
+        var width = bits / 4;
         return "0x" + value.ToString("X" + width, CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryParseUnsigned(string s, out ulong value)
+    {
+        s = s.Trim().Replace("_", string.Empty, StringComparison.Ordinal);
+        if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            return ulong.TryParse(s[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+        if (s.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
+            return TryParseBinary(s[2..], out value);
+        if (Regex.IsMatch(s, "^[01]+$") && s.Length > 1)
+            return TryParseBinary(s, out value);
+        return ulong.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+    }
+
+    private static bool TryParseBase(string s, int fromBase, out ulong value)
+    {
+        s = s.Trim().Replace("_", string.Empty, StringComparison.Ordinal);
+        if (fromBase == 2)
+        {
+            if (s.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
+                s = s[2..];
+            return TryParseBinary(s, out value);
+        }
+        if (fromBase == 16)
+        {
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                s = s[2..];
+            return ulong.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+        }
+        return ulong.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+    }
+
+    private static bool TryParseBinary(string s, out ulong value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(s) || s.Any(c => c != '0' && c != '1') || s.Length > 64)
+            return false;
+        foreach (var c in s)
+            value = (value << 1) | (ulong)(c - '0');
+        return true;
     }
 
     private static Result MakeResult(string title, string subtitle, string copyText)
@@ -372,35 +393,19 @@ public sealed class Main : IPlugin, IPluginI18n
         return new Result
         {
             Title = title,
-            SubTitle = subtitle + " | Enter: copy",
+            SubTitle = string.IsNullOrWhiteSpace(copyText) ? subtitle : subtitle + " | Enter: copy",
             IcoPath = IconPath,
-            QueryTextDisplay = copyText,
-            Score = 100,
             Action = _ =>
             {
-                Clipboard.SetText(copyText);
+                if (!string.IsNullOrWhiteSpace(copyText))
+                    Clipboard.SetText(copyText);
                 return true;
             }
         };
     }
 
-    private static List<Result> HelpResults() => new()
+    private static List<Result> ErrorResult(string title, string subtitle)
     {
-        MakeResult("dev ts 1719302400", "Unix timestamp -> local/UTC date", "dev ts 1719302400"),
-        MakeResult("dev date 2026-06-25 17:30:00", "Local date string -> Unix seconds/ms", "dev date 2026-06-25 17:30:00"),
-        MakeResult("dev h2n 0x12345678", "host/network byte order, auto uint16/32/64", "dev h2n 0x12345678"),
-        MakeResult("dev d2b 42 / b2d 101010 / h2d 0x2A", "base conversions", "dev d2b 42"),
-        MakeResult("dev ip 192.168.1.1 / ip2int / ip2hex / int2ip / hex2ip", "IPv4 decimal-dot <-> int/hex", "dev ip 192.168.1.1")
-    };
-
-    private static List<Result> ErrorResult(string title, string subtitle) => new()
-    {
-        new Result
-        {
-            Title = title,
-            SubTitle = subtitle,
-            IcoPath = IconPath,
-            Score = 1
-        }
-    };
+        return new List<Result> { MakeResult(title, subtitle, string.Empty) };
+    }
 }
