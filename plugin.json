@@ -1,0 +1,13 @@
+{
+  "ID": "D3C6C982BFB64D1A8FD1837D01E7A4C9",
+  "ActionKeyword": "dev",
+  "IsGlobal": false,
+  "Name": "DevConvert",
+  "Author": "pagict + ChatGPT",
+  "Version": "0.1.0",
+  "Language": "csharp",
+  "Website": "https://github.com/pagict/DevConvertPowerToysRun",
+  "ExecuteFileName": "Community.PowerToys.Run.Plugin.DevConvert.dll",
+  "IcoPath": "Images\\devconvert.png",
+  "DynamicLoading": false
+}

@@ -1,0 +1,36 @@
+name: Build plugin
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Publish x64
+        run: dotnet publish -c Release -r win-x64 --self-contained false -p:Platform=x64 -o .\publish\DevConvert
+
+      - name: Zip plugin
+        shell: pwsh
+        run: |
+          Compress-Archive -Path .\publish\DevConvert -DestinationPath .\DevConvert-PowerToysRun-x64.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DevConvert-PowerToysRun-x64
+          path: .\DevConvert-PowerToysRun-x64.zip
