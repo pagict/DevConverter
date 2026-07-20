@@ -12,8 +12,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />
+    <Compile Include="src\DevConverter.Core\ConversionResult.cs" Link="Core\ConversionResult.cs" />
+    <Compile Include="src\DevConverter.Core\ConversionEngine.cs" Link="Core\ConversionEngine.cs" />
     <PackageReference Include="Community.PowerToys.Run.Plugin.Dependencies" Version="0.97.0" />
-    <ProjectReference Include="src\DevConverter.Core\DevConverter.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="plugin.json" CopyToOutputDirectory="PreserveNewest" />
