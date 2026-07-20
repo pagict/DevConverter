@@ -30,7 +30,16 @@ dev ip2int 192.168.1.1
 dev ip2hex 192.168.1.1
 dev int2ip 3232235777
 dev hex2ip 0xC0A80101
+
+dev b64enc hello
+dev b64dec aGVsbG8=
+dev hash hello
+dev hash sha256 hello
+dev hash md5 hello
+dev uuid
 ```
+
+Text commands use UTF-8. `hash` defaults to SHA-256 and supports `md5`, `sha1`, `sha256`, `sha384`, and `sha512`. `guid` is an alias for `uuid`.
 
 Press Enter on a result to copy it.
 
