@@ -146,7 +146,7 @@ public sealed class Main : IPlugin, IPluginI18n
         {
             MakeResult("DevConvert commands", "ts/date, h2n/n2h/swap16/32/64, d2b/b2d/d2h/h2d, ip/ip2int/ip2hex/int2ip/hex2ip", string.Empty),
             MakeResult("Text commands", "b64enc/b64dec, hash [md5|sha1|sha256|sha384|sha512], uuid/guid", string.Empty),
-            MakeResult("Examples", "dev b64enc hello | dev hash sha256 hello | dev uuid", string.Empty)
+            MakeResult("Examples", "dev date now | dev b64enc hello | dev hash sha256 hello | dev uuid", string.Empty)
         };
     }
 
@@ -175,7 +175,11 @@ public sealed class Main : IPlugin, IPluginI18n
             return ErrorResult("Invalid date", "Try: dev date 2026-06-25 17:30:00");
 
         DateTimeOffset dto;
-        if (DateTimeOffset.TryParse(arg, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsedOffset))
+        if (arg.Equals("now", StringComparison.OrdinalIgnoreCase))
+        {
+            dto = DateTimeOffset.Now;
+        }
+        else if (DateTimeOffset.TryParse(arg, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsedOffset))
         {
             dto = assumeUtc ? parsedOffset.ToUniversalTime() : parsedOffset;
         }
