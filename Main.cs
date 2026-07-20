@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using Wox.Plugin;
@@ -19,7 +21,7 @@ public sealed class Main : IPlugin, IPluginI18n
     private static readonly string IconPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty, "Images", "devconvert.png");
 
     public string Name => PluginName;
-    public string Description => "Developer conversions: timestamp/date, endian, number base, IPv4.";
+    public string Description => "Developer conversions: timestamp/date, endian, number base, IPv4, Base64, hash, UUID.";
 
     public void Init(PluginInitContext context)
     {
@@ -40,7 +42,7 @@ public sealed class Main : IPlugin, IPluginI18n
         try
         {
             var results = Convert(input).ToList();
-            return results.Count == 0 ? ErrorResult("Unknown command", "Try: ts/date/h2n/n2h/d2b/b2d/ip2int/ip2hex/hex2ip/int2ip") : results;
+            return results.Count == 0 ? ErrorResult("Unknown command", "Try: ts/date/h2n/d2b/ip/b64enc/b64dec/hash/uuid") : results;
         }
         catch (Exception ex)
         {
@@ -74,6 +76,16 @@ public sealed class Main : IPlugin, IPluginI18n
 
             case "dateutc":
                 return DateToUnix(arg, assumeUtc: true);
+
+            case "b64enc":
+                return Base64Encode(arg);
+            case "b64dec":
+                return Base64Decode(arg);
+            case "hash":
+                return HashText(arg);
+            case "uuid":
+            case "guid":
+                return GenerateUuid(arg);
 
             case "h2n":
             case "host2net":
@@ -132,8 +144,9 @@ public sealed class Main : IPlugin, IPluginI18n
     {
         return new List<Result>
         {
-            MakeResult("DevConvert commands", "ts/date/tsms/dateutc, h2n/n2h/swap16/swap32/swap64, d2b/b2d/d2h/h2d, ip/ip2int/ip2hex/int2ip/hex2ip", string.Empty),
-            MakeResult("Examples", "dev ts 1719302400 | dev date 2026-06-25 17:30:00 | dev h2n 0x12345678 | dev ip 192.168.1.1", string.Empty)
+            MakeResult("DevConvert commands", "ts/date, h2n/n2h/swap16/32/64, d2b/b2d/d2h/h2d, ip/ip2int/ip2hex/int2ip/hex2ip", string.Empty),
+            MakeResult("Text commands", "b64enc/b64dec, hash [md5|sha1|sha256|sha384|sha512], uuid/guid", string.Empty),
+            MakeResult("Examples", "dev b64enc hello | dev hash sha256 hello | dev uuid", string.Empty)
         };
     }
 
@@ -233,6 +246,57 @@ public sealed class Main : IPlugin, IPluginI18n
         };
 
         return new[] { MakeResult(text, $"base {fromBase} -> base {toBase}", text) };
+    }
+
+
+    private static IEnumerable<Result> Base64Encode(string arg)
+    {
+        var encoded = System.Convert.ToBase64String(Encoding.UTF8.GetBytes(arg));
+        return new[] { MakeResult(encoded, "UTF-8 text -> Base64", encoded) };
+    }
+
+    private static IEnumerable<Result> Base64Decode(string arg)
+    {
+        if (string.IsNullOrWhiteSpace(arg))
+            return ErrorResult("Invalid Base64", "Try: dev b64dec aGVsbG8=");
+
+        var bytes = System.Convert.FromBase64String(arg.Trim());
+        var decoded = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetString(bytes);
+        return new[] { MakeResult(decoded, "Base64 -> UTF-8 text", decoded) };
+    }
+
+    private static IEnumerable<Result> HashText(string arg)
+    {
+        var parts = SplitFirstToken(arg);
+        var requested = parts.Command.ToLowerInvariant();
+        var supported = requested is "md5" or "sha1" or "sha256" or "sha384" or "sha512";
+        var algorithm = supported ? requested : "sha256";
+        var text = supported ? parts.Remainder : arg;
+
+        if (string.IsNullOrEmpty(text))
+            return ErrorResult("Missing text", "Try: dev hash sha256 hello");
+
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var digest = algorithm switch
+        {
+            "md5" => MD5.HashData(bytes),
+            "sha1" => SHA1.HashData(bytes),
+            "sha256" => SHA256.HashData(bytes),
+            "sha384" => SHA384.HashData(bytes),
+            "sha512" => SHA512.HashData(bytes),
+            _ => throw new InvalidOperationException("Unsupported hash algorithm")
+        };
+        var hex = System.Convert.ToHexString(digest).ToLowerInvariant();
+        return new[] { MakeResult(hex, algorithm.ToUpperInvariant() + " (UTF-8)", hex) };
+    }
+
+    private static IEnumerable<Result> GenerateUuid(string arg)
+    {
+        if (!string.IsNullOrWhiteSpace(arg))
+            return ErrorResult("Unexpected argument", "Try: dev uuid");
+
+        var uuid = Guid.NewGuid().ToString("D", CultureInfo.InvariantCulture);
+        return new[] { MakeResult(uuid, "UUID v4", uuid) };
     }
 
     private static IEnumerable<Result> AutoConvert(string input)
