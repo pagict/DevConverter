@@ -4,7 +4,7 @@
   "IsGlobal": false,
   "Name": "DevConvert",
   "Author": "pagict + ChatGPT",
-  "Version": "0.2.0",
+  "Version": "0.2.1",
   "Language": "csharp",
   "Website": "https://github.com/pagict/DevConverter",
   "ExecuteFileName": "Community.PowerToys.Run.Plugin.DevConvert.dll",
