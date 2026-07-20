@@ -10,6 +10,7 @@ Action keyword: `dev`
 dev ts 1719302400
 dev tsms 1719302400000
 dev date 2026-06-25 17:30:00
+dev date now
 dev dateutc 2026-06-25T09:30:00Z
 
 dev h2n 0x12345678
