@@ -1,8 +1,15 @@
-# DevConvert PowerToys Run Plugin
+# DevConverter
 
-A small PowerToys Run plugin for developer conversions.
+One conversion engine, exposed through PowerToys Run on Windows and Spotlight on macOS.
 
-Action keyword: `dev`
+## Architecture
+
+- `DevConverter.Core` owns all parsing, conversions, output labels, and errors.
+- `DevConverter.PowerToys` is the thin Windows UI adapter (the project at repository root).
+- `devconvert` is a cross-platform CLI and JSON bridge.
+- `DevConverter Spotlight.app` is a native App Intent host that invokes the embedded CLI.
+
+The platform adapters do not contain conversion rules, so the same command produces the same values on both systems. Date formatting uses the local time zone of the machine.
 
 ## Commands
 
@@ -40,38 +47,39 @@ dev hash md5 hello
 dev uuid
 ```
 
-Text commands use UTF-8. `hash` defaults to SHA-256 and supports `md5`, `sha1`, `sha256`, `sha384`, and `sha512`. `guid` is an alias for `uuid`.
+Text commands use UTF-8. `hash` defaults to SHA-256 and also supports MD5, SHA-1, SHA-384, and SHA-512. `guid` is an alias for `uuid`.
 
-Press Enter on a result to copy it.
+## Windows: PowerToys Run
 
-## Build without installing C# tooling locally
-
-The easiest way is GitHub Actions:
-
-1. Create a new GitHub repository.
-2. Upload these files.
-3. Open the repository's **Actions** tab.
-4. Run **Build plugin** manually.
-5. Download the generated artifact `DevConvert-PowerToysRun-x64.zip`.
-
-## Install
-
-1. Close PowerToys completely.
-2. Extract the zip.
-3. Copy the extracted `DevConvert` folder to:
-
-```text
-%LOCALAPPDATA%\Microsoft\PowerToys\PowerToys Run\Plugins
-```
-
-4. Start PowerToys again.
-5. Open PowerToys Run and type `dev`.
-
-## Local build, optional
-
-If you later install .NET SDK:
+Download `DevConverter-PowerToysRun-x64.zip` from a release, then run:
 
 ```powershell
-dotnet restore
-dotnet publish -c Release -r win-x64 --self-contained false -p:Platform=x64 -o publish\DevConvert
+./scripts/install-windows.ps1 -Archive ./DevConverter-PowerToysRun-x64.zip
 ```
+
+Without `-Archive`, the installer uses authenticated GitHub CLI access to download the latest release. Open PowerToys Run and type `dev date now`; Enter copies the selected value.
+
+## macOS: Spotlight
+
+The native integration requires macOS Tahoe 26 for Spotlight Quick Keys. Download the archive matching the Mac architecture, then run:
+
+```bash
+./scripts/install-macos.sh ./DevConverter-macos-arm64.zip
+```
+
+Without an archive argument, the installer uses authenticated GitHub CLI access to download the latest release. After the app has opened once:
+
+1. Open System Settings → Spotlight → Quick Keys.
+2. Assign `dev` to the **Dev Convert** action.
+3. Open Spotlight and type `dev date now`.
+
+Spotlight runs the App Intent, displays the results, and copies the primary value. Apple does not currently expose a supported API for an installer to assign a Quick Key, so step 2 is intentionally manual.
+
+## Build
+
+```bash
+dotnet test tests/DevConverter.Core.Tests/DevConverter.Core.Tests.csproj
+dotnet publish src/DevConverter.Cli/DevConverter.Cli.csproj -c Release
+```
+
+The read-only GitHub Actions workflow builds and packages Windows x64 plus macOS arm64/x64. After reviewing the artifacts, create a release and attach the three zip files; the installation scripts then consume those release assets.

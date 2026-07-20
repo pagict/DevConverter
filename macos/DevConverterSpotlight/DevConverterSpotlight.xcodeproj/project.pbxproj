@@ -1,0 +1,60 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 60;
+	objects = {
+		D00000000000000000000001 /* DevConverterSpotlight */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D00000000000000000000011;
+			buildPhases = (D00000000000000000000002, D00000000000000000000003, D00000000000000000000004);
+			buildRules = ();
+			dependencies = ();
+			name = DevConverterSpotlight;
+			productName = DevConverterSpotlight;
+			productReference = D00000000000000000000005;
+			productType = "com.apple.product-type.application";
+		};
+		D00000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (D00000000000000000000021, D00000000000000000000022);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D00000000000000000000003 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+		D00000000000000000000004 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+		D00000000000000000000005 /* DevConverter Spotlight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DevConverter Spotlight.app"; sourceTree = BUILT_PRODUCTS_DIR;};
+		D00000000000000000000006 /* DevConverterSpotlightApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevConverterSpotlightApp.swift; sourceTree = "<group>";};
+		D00000000000000000000007 /* DevConvertIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevConvertIntent.swift; sourceTree = "<group>";};
+		D00000000000000000000008 = {
+			isa = PBXGroup;
+			children = (D00000000000000000000006, D00000000000000000000007, D00000000000000000000009, D00000000000000000000010);
+			sourceTree = "<group>";
+		};
+		D00000000000000000000009 /* Frameworks */ = {isa = PBXGroup; children = (); name = Frameworks; sourceTree = "<group>";};
+		D00000000000000000000010 /* Products */ = {isa = PBXGroup; children = (D00000000000000000000005); name = Products; sourceTree = "<group>";};
+		D00000000000000000000012 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600; TargetAttributes = {D00000000000000000000001 = {CreatedOnToolsVersion = 16.0;};};};
+			buildConfigurationList = D00000000000000000000013;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = D00000000000000000000008;
+			productRefGroup = D00000000000000000000010;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (D00000000000000000000001);
+		};
+		D00000000000000000000011 = {isa = XCConfigurationList; buildConfigurations = (D00000000000000000000031, D00000000000000000000032); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+		D00000000000000000000013 = {isa = XCConfigurationList; buildConfigurations = (D00000000000000000000033, D00000000000000000000034); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+		D00000000000000000000021 /* DevConverterSpotlightApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000006;};
+		D00000000000000000000022 /* DevConvertIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00000000000000000000007;};
+		D00000000000000000000031 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = ""; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = DevConverter; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; MACOSX_DEPLOYMENT_TARGET = 15.0; MARKETING_VERSION = 1.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.pagict.DevConverterSpotlight; PRODUCT_NAME = "DevConverter Spotlight"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0;}; name = Debug;};
+		D00000000000000000000032 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = ""; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_HARDENED_RUNTIME = YES; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = DevConverter; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; MACOSX_DEPLOYMENT_TARGET = 15.0; MARKETING_VERSION = 1.0.0; PRODUCT_BUNDLE_IDENTIFIER = com.pagict.DevConverterSpotlight; PRODUCT_NAME = "DevConverter Spotlight"; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0;}; name = Release;};
+		D00000000000000000000033 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; MACOSX_DEPLOYMENT_TARGET = 15.0; SDKROOT = macosx;}; name = Debug;};
+		D00000000000000000000034 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; MACOSX_DEPLOYMENT_TARGET = 15.0; SDKROOT = macosx;}; name = Release;};
+	};
+	rootObject = D00000000000000000000012 /* Project object */;
+}

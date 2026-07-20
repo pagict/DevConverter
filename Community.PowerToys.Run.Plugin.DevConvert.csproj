@@ -9,17 +9,12 @@
     <AssemblyName>Community.PowerToys.Run.Plugin.DevConvert</AssemblyName>
     <RootNamespace>Community.PowerToys.Run.Plugin.DevConvert</RootNamespace>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Community.PowerToys.Run.Plugin.Dependencies" Version="0.97.0" />
+    <ProjectReference Include="src\DevConverter.Core\DevConverter.Core.csproj" />
   </ItemGroup>
-
   <ItemGroup>
-    <None Include="plugin.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Images\*.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="plugin.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Images\*.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
