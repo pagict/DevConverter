@@ -57,7 +57,7 @@ Download `DevConverter-PowerToysRun-x64.zip` from a release, then run:
 ./scripts/install-windows.ps1 -Archive ./DevConverter-PowerToysRun-x64.zip
 ```
 
-Without `-Archive`, the installer uses authenticated GitHub CLI access to download the latest release. Open PowerToys Run and type `dev date now`; Enter copies the selected value.
+Without `-Archive`, the installer downloads the latest public release directly from GitHub; GitHub CLI is not required. Open PowerToys Run and type `dev date now`; Enter copies the selected value.
 
 ## macOS: Spotlight
 
@@ -67,7 +67,7 @@ The native integration requires macOS Tahoe 26 for Spotlight Quick Keys. Downloa
 ./scripts/install-macos.sh ./DevConverter-macos-arm64.zip
 ```
 
-Without an archive argument, the installer uses authenticated GitHub CLI access to download the latest release. After the app has opened once:
+Without an archive argument, the installer downloads the latest public release directly from GitHub; GitHub CLI is not required. After the app has opened once:
 
 1. Open System Settings → Spotlight → Quick Keys.
 2. Assign `dev` to the **Dev Convert** action.

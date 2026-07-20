@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-repository="${DEVCONVERTER_REPOSITORY:-pagict/DevConverter}"
 archive="${1:-}"
 arch="$(uname -m)"
 case "$arch" in
@@ -14,9 +13,10 @@ tmp="$(mktemp -d "${TMPDIR:-/tmp}/devconverter.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
 
 if [[ -z "$archive" ]]; then
-  command -v gh >/dev/null 2>&1 || { echo 'GitHub CLI (gh) is required to download this private repository release.' >&2; exit 1; }
-  gh release download --repo "$repository" --pattern "$asset" --dir "$tmp" --clobber
   archive="$tmp/$asset"
+  curl --fail --location --silent --show-error \
+    "https://github.com/pagict/DevConverter/releases/latest/download/$asset" \
+    --output "$archive"
 fi
 
 ditto -x -k "$archive" "$tmp/unpacked"

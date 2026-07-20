@@ -1,8 +1,7 @@
 #!/usr/bin/env pwsh
 [CmdletBinding()]
 param(
-    [string]$Archive,
-    [string]$Repository = 'pagict/DevConverter'
+    [string]$Archive
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,12 +12,9 @@ New-Item -ItemType Directory -Path $temp | Out-Null
 
 try {
     if (-not $Archive) {
-        if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-            throw 'GitHub CLI (gh) is required to download this private repository release.'
-        }
-        & gh release download --repo $Repository --pattern 'DevConverter-PowerToysRun-x64.zip' --dir $temp --clobber
-        if ($LASTEXITCODE -ne 0) { throw 'Failed to download the latest DevConverter release.' }
         $Archive = Join-Path $temp 'DevConverter-PowerToysRun-x64.zip'
+        $downloadUrl = 'https://github.com/pagict/DevConverter/releases/latest/download/DevConverter-PowerToysRun-x64.zip'
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $Archive
     }
 
     Expand-Archive -LiteralPath $Archive -DestinationPath $temp -Force
