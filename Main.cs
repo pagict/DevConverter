@@ -14,6 +14,8 @@ namespace Community.PowerToys.Run.Plugin.DevConvert;
 public sealed class Main : IPlugin, IPluginI18n
 {
     private const string PluginName = "DevConvert";
+
+    public static string PluginID => "D3C6C982BFB64D1A8FD1837D01E7A4C9";
     private static readonly string IconPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty, "Images", "devconvert.png");
 
     public string Name => PluginName;
