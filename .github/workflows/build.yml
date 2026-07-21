@@ -7,7 +7,7 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
@@ -74,3 +74,32 @@ jobs:
         with:
           name: ${{ matrix.asset }}
           path: ${{ matrix.asset }}
+
+  release:
+    if: github.ref == 'refs/heads/master'
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+      - name: Read version
+        id: version
+        run: echo "tag=v$(jq -r '.Version' plugin.json)" >> "$GITHUB_OUTPUT"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --generate-notes \
+            release-assets/DevConverter-PowerToysRun-x64/DevConverter-PowerToysRun-x64.zip \
+            release-assets/DevConverter-macos-arm64.zip/DevConverter-macos-arm64.zip \
+            release-assets/DevConverter-macos-x64.zip/DevConverter-macos-x64.zip

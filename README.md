@@ -82,4 +82,4 @@ dotnet test tests/DevConverter.Core.Tests/DevConverter.Core.Tests.csproj
 dotnet publish src/DevConverter.Cli/DevConverter.Cli.csproj -c Release
 ```
 
-The read-only GitHub Actions workflow builds and packages Windows x64 plus macOS arm64/x64. After reviewing the artifacts, create a release and attach the three zip files; the installation scripts then consume those release assets.
+GitHub Actions tests, builds, and packages Windows x64 plus macOS arm64/x64. After a successful `master` build, it reads the version from `plugin.json` and publishes the matching release automatically; existing release tags are left unchanged.
