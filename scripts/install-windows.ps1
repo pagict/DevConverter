@@ -21,7 +21,7 @@ try {
     $source = Join-Path $temp 'DevConverter'
     if (-not (Test-Path (Join-Path $source 'plugin.json'))) { throw 'The archive does not contain a DevConverter plugin.' }
 
-    Get-Process PowerToys -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Process | Where-Object ProcessName -Like 'PowerToys*' | Stop-Process -Force
     New-Item -ItemType Directory -Path $pluginRoot -Force | Out-Null
     if (Test-Path $target) { Remove-Item -LiteralPath $target -Recurse -Force }
     Copy-Item -LiteralPath $source -Destination $target -Recurse
