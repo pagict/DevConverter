@@ -41,13 +41,15 @@ dev hex2ip 0xC0A80101
 
 dev b64enc hello
 dev b64dec aGVsbG8=
+dev urlenc hello world
+dev urldec hello%20world
 dev hash hello
 dev hash sha256 hello
 dev hash md5 hello
 dev uuid
 ```
 
-Text commands use UTF-8. `hash` defaults to SHA-256 and also supports MD5, SHA-1, SHA-384, and SHA-512. `guid` is an alias for `uuid`.
+Text commands use UTF-8. `urlenc`/`urlencode` use RFC 3986 percent-encoding (for example, spaces become `%20`); `urldec`/`urldecode` reverse it. `hash` defaults to SHA-256 and also supports MD5, SHA-1, SHA-384, and SHA-512. `guid` is an alias for `uuid`.
 
 ## Windows: PowerToys Run
 
