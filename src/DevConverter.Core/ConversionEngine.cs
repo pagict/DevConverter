@@ -31,6 +31,8 @@ public sealed class ConversionEngine
                 "dateutc" => DateToUnix(arg, true),
                 "b64enc" => Base64Encode(arg),
                 "b64dec" => Base64Decode(arg),
+                "urlenc" or "urlencode" => UrlEncode(arg),
+                "urldec" or "urldecode" => UrlDecode(arg),
                 "hash" => HashText(arg),
                 "uuid" or "guid" => GenerateUuid(arg),
                 "h2n" or "host2net" or "n2h" or "net2host" => SwapEndianAuto(arg, cmd),
@@ -59,8 +61,8 @@ public sealed class ConversionEngine
     private static IReadOnlyList<ConversionResult> Help() =>
     [
         Result("DevConverter commands", "ts/date, h2n/n2h/swap16/32/64, d2b/b2d/d2h/h2d, ip/ip2int/ip2hex/int2ip/hex2ip"),
-        Result("Text commands", "b64enc/b64dec, hash [md5|sha1|sha256|sha384|sha512], uuid/guid"),
-        Result("Examples", "dev date now | dev b64enc hello | dev hash sha256 hello | dev uuid")
+        Result("Text commands", "b64enc/b64dec, urlenc/urlencode, urldec/urldecode, hash [md5|sha1|sha256|sha384|sha512], uuid/guid"),
+        Result("Examples", "dev date now | dev urlenc hello world | dev hash sha256 hello | dev uuid")
     ];
 
     private static IReadOnlyList<ConversionResult> UnixToDate(string arg, bool? milliseconds)
@@ -117,6 +119,20 @@ public sealed class ConversionEngine
         var bytes = System.Convert.FromBase64String(arg.Trim());
         var decoded = new UTF8Encoding(false, true).GetString(bytes);
         return [Result(decoded, "Base64 -> UTF-8 text")];
+    }
+
+    private static IReadOnlyList<ConversionResult> UrlEncode(string arg)
+    {
+        var encoded = Uri.EscapeDataString(arg);
+        return [Result(encoded, "UTF-8 text -> URL percent-encoding")];
+    }
+
+    private static IReadOnlyList<ConversionResult> UrlDecode(string arg)
+    {
+        if (string.IsNullOrWhiteSpace(arg))
+            return Error("Invalid URL-encoded text", "Try: dev urldec hello%20world");
+        var decoded = Uri.UnescapeDataString(arg);
+        return [Result(decoded, "URL percent-encoding -> UTF-8 text")];
     }
 
     private static IReadOnlyList<ConversionResult> HashText(string arg)
@@ -239,7 +255,7 @@ public sealed class ConversionEngine
         }
         if (long.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timestamp) && Math.Abs(timestamp) is >= 1_000_000_000 and <= 9_999_999_999_999)
             results.AddRange(UnixToDate(input, null));
-        return results.Count > 0 ? results : Error("Unknown command", "Try: ts/date/h2n/d2b/ip/b64enc/b64dec/hash/uuid");
+        return results.Count > 0 ? results : Error("Unknown command", "Try: ts/date/h2n/d2b/ip/b64enc/b64dec/urlenc/urldec/hash/uuid");
     }
 
     private static (string Command, string Remainder) SplitFirstToken(string value)
