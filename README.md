@@ -53,13 +53,51 @@ Text commands use UTF-8. `urlenc`/`urlencode` use RFC 3986 percent-encoding (for
 
 ## Windows: PowerToys Run
 
-Download `DevConverter-PowerToysRun-x64.zip` from a release, then run:
+**Requirements:** Windows x64 with [Microsoft PowerToys](https://github.com/microsoft/PowerToys) installed and PowerToys Run enabled. Download the Windows plugin archive, **`DevConverter-PowerToysRun-x64.zip`**, from the [latest DevConverter release](https://github.com/pagict/DevConverter/releases/latest).
+
+### Manual installation (no Git required)
+
+1. Quit PowerToys completely from its system-tray icon.
+2. Extract `DevConverter-PowerToysRun-x64.zip`. The archive contains a `DevConverter` folder.
+3. Open File Explorer and paste the following into the address bar. Create the `Plugins` directory if it does not already exist:
+
+   ```text
+   %LOCALAPPDATA%\Microsoft\PowerToys\PowerToys Run\Plugins
+   ```
+
+4. Copy the extracted **`DevConverter` folder** into `Plugins`. The resulting layout should be:
+
+   ```text
+   Plugins/
+   └── DevConverter/
+       ├── plugin.json
+       ├── Community.PowerToys.Run.Plugin.DevConvert.dll
+       └── ...
+   ```
+
+   Make sure you do not accidentally nest the folder as `Plugins/DevConverter/DevConverter/`.
+5. Start PowerToys again. In **PowerToys Settings → PowerToys Run → Plugins**, make sure **DevConverter** is enabled.
+6. Open PowerToys Run (normally **Alt + Space**), enter `dev date now`, and press **Enter** to copy the result.
+
+### Install or update with PowerShell
+
+The repository includes [`scripts/install-windows.ps1`](scripts/install-windows.ps1). Clone or download this repository to obtain the script, then run it from the repository root:
 
 ```powershell
-./scripts/install-windows.ps1 -Archive ./DevConverter-PowerToysRun-x64.zip
+git clone https://github.com/pagict/DevConverter.git
+cd DevConverter
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
 ```
 
-Without `-Archive`, the installer downloads the latest public release directly from GitHub; GitHub CLI is not required. Open PowerToys Run and type `dev date now`; Enter copies the selected value.
+By default, the script downloads the latest public release from GitHub. To install an archive you already downloaded, provide its path:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1 -Archive "C:\Downloads\DevConverter-PowerToysRun-x64.zip"
+```
+
+The script stops PowerToys, replaces any existing DevConverter plugin folder, copies the new files, and attempts to restart PowerToys. If it does not restart automatically, launch it yourself. No GitHub CLI is required to run the installer; Git is only needed if you choose to clone the repository rather than download its source ZIP.
+
+**Troubleshooting:** If DevConverter does not appear in PowerToys Run, verify that `Plugins\DevConverter\plugin.json` exists, that the plugin is enabled in PowerToys settings, and that PowerToys has been fully restarted. A tagged release may lag the commands documented on `master`; check the release date if a recently added command is missing.
 
 ## macOS: Spotlight
 
